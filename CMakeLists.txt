@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
-set(exe_name SDLMadness2016)
+set(lib_name SDLMadness)
+set(exe_name SDLMadness2017)
 project(${exe_name})
 
 # Extern Pro
@@ -14,7 +15,6 @@ include_directories(/usr/local/smc/lib ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRE
 
 # Library
 set(srcs
-  main.cpp
   explore.hpp
   explore.cpp
   Pick.hpp
@@ -26,7 +26,10 @@ set(srcs
   Util.hpp
   )
 
-
+# Executable
+set(exe_srcs
+ main.cpp
+ )
 xpStringAppendIfDne(CUDA_NVCC_FLAGS "--generate-code arch=compute_30,code=sm_30")
 xpStringAppendIfDne(CUDA_NVCC_FLAGS "--generate-code arch=compute_30,code=compute_30")
 #xpStringAppendIfDne(CUDA_NVCC_FLAGS_DEBUG "-G")
@@ -35,6 +38,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 include_directories(${CUDA_TOOLKIT_INCLUDE} ${externIncs} "/opt/externpro/externpro-16.01.1-gcc493-64-Linux/include/boost-1_57")
 message(${externIncs})
 source_group("Source" FILES ${srcs})
-cuda_add_executable(${exe_name} ${srcs})
-target_link_libraries(${exe_name} ${CUDA_LIBRARIES})
+
+cuda_add_library(${lib_name} ${srcs})
+cuda_add_executable(${exe_name} ${exe_srcs})
+target_link_libraries(${exe_name} ${CUDA_LIBRARIES} ${lib_name})
 target_include_directories(${exe_name} ${externIncs})
+add_subdirectory(Test)

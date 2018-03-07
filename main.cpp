@@ -27,10 +27,19 @@
 #include <iostream>
 #include <limits>
 
-
 int main()
 {
-  Five38BracketOdds bracket("/home/bnelson/Documents/fivethirtyeight_ncaa_forecasts.csv", "Right");
-  runCudaApproach(bracket);
+  {
+    std::cout << "Left" << std::endl;
+    std::cout << "------------------------" << std::endl;
+    Five38BracketOdds bracket("fivethirtyeight_ncaa_forecasts.csv", "Left");
+    runCudaApproach(bracket);
+  }
+  {
+    std::cout << "Right" << std::endl;
+    std::cout << "------------------------" << std::endl;
+    Five38BracketOdds bracket("fivethirtyeight_ncaa_forecasts.csv", "Right");
+    runCudaApproach(bracket);
+  }
   return 0;
 }

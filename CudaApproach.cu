@@ -20,8 +20,10 @@ namespace impl
                                      const float* __restrict__ pOdds,
                                      const float* __restrict__ pSeeds)
     {
-      return ExpectedTreeResult<round-1, 2 * game>::Evaluate(pick, pOdds, pSeeds) +
-             ExpectedTreeResult<round-1, 2 * game + 1>::Evaluate(pick, pOdds, pSeeds) +
+      return ExpectedTreeResult<round - 1, 2 * game>::Evaluate(
+               pick, pOdds, pSeeds) +
+             ExpectedTreeResult<round - 1, 2 * game + 1>::Evaluate(
+               pick, pOdds, pSeeds) +
              ExpectedResult<round, game>::Evaluate(pick, pOdds, pSeeds);
     }
   };
@@ -36,7 +38,6 @@ namespace impl
       return ExpectedResult<1, game>::Evaluate(pick, pOdds, pSeeds);
     }
   };
-
 
   template <unsigned int round, unsigned int game>
   struct EvaluateGames
@@ -61,30 +62,28 @@ namespace impl
     }
   };
 
-//  template <unsigned int game>
-//  struct EvaluateGames<1, game>
-//  {
-//    static __device__ float Evaluate(unsigned int pick,
-//                                     const float* __restrict__ pOdds,
-//                                     const float* __restrict__ pSeeds)
-//    {
-//      return EvaluateGames<1, game - 1>::Evaluate(pick, pOdds, pSeeds) +
-//             ExpectedResult<1, game>::Evaluate(pick, pOdds, pSeeds);
-//    }
-//  };
+  //  template <unsigned int game>
+  //  struct EvaluateGames<1, game>
+  //  {
+  //    static __device__ float Evaluate(unsigned int pick,
+  //                                     const float* __restrict__ pOdds,
+  //                                     const float* __restrict__ pSeeds)
+  //    {
+  //      return EvaluateGames<1, game - 1>::Evaluate(pick, pOdds, pSeeds) +
+  //             ExpectedResult<1, game>::Evaluate(pick, pOdds, pSeeds);
+  //    }
+  //  };
 
-//  template <>
-//  struct EvaluateGames<1, 0>
-//  {
-//    static __device__ float Evaluate(unsigned int pick,
-//                                     const float* __restrict__ pOdds,
-//                                     const float* __restrict__ pSeeds)
-//    {
-//      return ExpectedResult<1, 0>::Evaluate(pick, pOdds, pSeeds);
-//    }
-//  };
-
-
+  //  template <>
+  //  struct EvaluateGames<1, 0>
+  //  {
+  //    static __device__ float Evaluate(unsigned int pick,
+  //                                     const float* __restrict__ pOdds,
+  //                                     const float* __restrict__ pSeeds)
+  //    {
+  //      return ExpectedResult<1, 0>::Evaluate(pick, pOdds, pSeeds);
+  //    }
+  //  };
 
   // All of the below assumes 32 team brackets, since we'll easily be able
   // to run them.  For some spot checking I can compare against CPU calculated
@@ -111,8 +110,8 @@ namespace impl
   }
 
   __device__ float runThirdRound(unsigned int pick,
-                                  const float* __restrict__ pOdds,
-                                  const float* __restrict__ pSeeds)
+                                 const float* __restrict__ pOdds,
+                                 const float* __restrict__ pSeeds)
   {
     return EvaluateGames<3, 3>::Evaluate(pick, pOdds, pSeeds);
   }
@@ -125,8 +124,8 @@ namespace impl
   }
 
   __device__ float runFifthRound(unsigned int pick,
-                                  const float* __restrict__ pOdds,
-                                  const float* __restrict__ pSeeds)
+                                 const float* __restrict__ pOdds,
+                                 const float* __restrict__ pSeeds)
   {
     return EvaluateGames<5, 0>::Evaluate(pick, pOdds, pSeeds);
   }
@@ -189,9 +188,9 @@ namespace impl
   }
 
   __global__ void runArrayedThreeRounds(float* pBestScore,
-                                      unsigned int* pBestPick,
-                                      float* pOdds,
-                                      float* pSeeds)
+                                        unsigned int* pBestPick,
+                                        float* pOdds,
+                                        float* pSeeds)
   {
     float bestScore = 0.0f;
     unsigned int bestPick = 0;
@@ -218,9 +217,9 @@ namespace impl
   }
 
   __global__ void runArrayedFourRounds(float* pBestScore,
-                                      unsigned int* pBestPick,
-                                      float* pOdds,
-                                      float* pSeeds)
+                                       unsigned int* pBestPick,
+                                       float* pOdds,
+                                       float* pSeeds)
   {
     float bestScore = 0.0f;
     unsigned int bestPick = 0;
@@ -231,7 +230,7 @@ namespace impl
     unsigned int numIterations = maxInt / gridSize + 2;
     for (int i = 0; i <= numIterations; ++i)
     {
-      if( idx == 0 )
+      if (idx == 0)
       {
         printf("%032x\n", i);
       }
@@ -251,9 +250,9 @@ namespace impl
   }
 
   __global__ void runArrayedFiveRounds(float* pBestScore,
-                                      unsigned int* pBestPick,
-                                      float* pOdds,
-                                      float* pSeeds)
+                                       unsigned int* pBestPick,
+                                       float* pOdds,
+                                       float* pSeeds)
   {
     float bestScore = 0.0f;
     unsigned int bestPick = 0;
@@ -261,7 +260,7 @@ namespace impl
     unsigned int gridSize = gridDim.x * blockDim.x;
     unsigned int maxInt = 0x7FFFFFFF;
     // Assumes a power of 2 grid size.
-    unsigned int numIterations = maxInt / gridSize + 2;
+    unsigned int numIterations = (maxInt+1) / gridSize + 4;
     for (int i = 0; i <= numIterations; ++i)
     {
 
@@ -269,10 +268,10 @@ namespace impl
       if (pick > maxInt) continue;
 
       auto score = runFifthRound(pick, pOdds, pSeeds);
-      if( idx == 0 )
+      if (idx == 0)
       {
-        //printf("%032x = %f\n", pick, score);
-        //printf("%d", i);
+         //printf("%032x = %f\n", pick, score);
+         //printf("%d", i);
       }
       if (score > bestScore)
       {
@@ -288,13 +287,19 @@ namespace impl
 
 void runCudaApproach(const Five38BracketOdds& odds)
 {
+  // I want to run 2, 4, 8, 16 input games (the 2 and 4 for debugging purposes).
+  // I can look at coding it to handle it, or maybe there are some predicted
+  // values I can set that will just fall out.
   dim3 blockDim;
   blockDim.x = 256;
   blockDim.y = 1;
   blockDim.z = 1;
 
   dim3 gridDim;
-  gridDim.x = 256;
+  gridDim.x = 1024;
+  // Each thread calculates one game.  May be less efficient, but will allow
+  // examination of the ordering.
+  //gridDim.x = 8388608/4;
   gridDim.y = 1;
   gridDim.z = 1;
 
@@ -308,33 +313,57 @@ void runCudaApproach(const Five38BracketOdds& odds)
   float* pdOdds;
   cudaMalloc(&pdOdds, sizeof(float) * 32 * 6);
 
-  cudaMemcpy(pdSeeds, odds.m_seeds.data(), sizeof(float) * 32, cudaMemcpyHostToDevice);
-  cudaMemcpy(pdOdds, odds.m_roundOdds[0].data(), sizeof(float) * 32, cudaMemcpyHostToDevice);
   cudaMemcpy(
-    pdOdds + 1 * 32, odds.m_roundOdds[1].data(), sizeof(float) * 32, cudaMemcpyHostToDevice);
-  cudaMemcpy(
-    pdOdds + 2 * 32, odds.m_roundOdds[2].data(), sizeof(float) * 32, cudaMemcpyHostToDevice);
-  cudaMemcpy(
-    pdOdds + 3 * 32, odds.m_roundOdds[3].data(), sizeof(float) * 32, cudaMemcpyHostToDevice);
-  cudaMemcpy(
-    pdOdds + 4 * 32, odds.m_roundOdds[4].data(), sizeof(float) * 32, cudaMemcpyHostToDevice);
-  cudaMemcpy(
-    pdOdds + 5 * 32, odds.m_roundOdds[5].data(), sizeof(float) * 32, cudaMemcpyHostToDevice);
+    pdSeeds, odds.m_seeds.data(), sizeof(float) * 32, cudaMemcpyHostToDevice);
+  cudaMemcpy(pdOdds,
+             odds.m_roundOdds[0].data(),
+             sizeof(float) * 32,
+             cudaMemcpyHostToDevice);
+  cudaMemcpy(pdOdds + 1 * 32,
+             odds.m_roundOdds[1].data(),
+             sizeof(float) * 32,
+             cudaMemcpyHostToDevice);
+  cudaMemcpy(pdOdds + 2 * 32,
+             odds.m_roundOdds[2].data(),
+             sizeof(float) * 32,
+             cudaMemcpyHostToDevice);
+  cudaMemcpy(pdOdds + 3 * 32,
+             odds.m_roundOdds[3].data(),
+             sizeof(float) * 32,
+             cudaMemcpyHostToDevice);
+  cudaMemcpy(pdOdds + 4 * 32,
+             odds.m_roundOdds[4].data(),
+             sizeof(float) * 32,
+             cudaMemcpyHostToDevice);
+  cudaMemcpy(pdOdds + 5 * 32,
+             odds.m_roundOdds[5].data(),
+             sizeof(float) * 32,
+             cudaMemcpyHostToDevice);
 
-  //impl::runArrayedOneRound << <blockDim, gridDim>>> (pdBestScore, pdBestPick, pdOdds, pdSeeds);
-  //impl::runArrayedTwoRounds << <blockDim, gridDim>>> (pdBestScore, pdBestPick, pdOdds, pdSeeds);
-  //impl::runArrayedThreeRounds << <blockDim, gridDim>>> (pdBestScore, pdBestPick, pdOdds, pdSeeds);
-  //impl::runArrayedFourRounds << <blockDim, gridDim>>> (pdBestScore, pdBestPick, pdOdds, pdSeeds);
+  // impl::runArrayedOneRound << <blockDim, gridDim>>> (pdBestScore, pdBestPick,
+  // pdOdds, pdSeeds);
+  // impl::runArrayedTwoRounds << <blockDim, gridDim>>> (pdBestScore,
+  // pdBestPick, pdOdds, pdSeeds);
+  // impl::runArrayedThreeRounds << <blockDim, gridDim>>> (pdBestScore,
+  // pdBestPick, pdOdds, pdSeeds);
+  // impl::runArrayedFourRounds << <blockDim, gridDim>>> (pdBestScore,
+  // pdBestPick, pdOdds, pdSeeds);
   cudaDeviceSetLimit(cudaLimitPrintfFifoSize, 2000000000);
-  impl::runArrayedFiveRounds << <blockDim, gridDim>>> (pdBestScore, pdBestPick, pdOdds, pdSeeds);
-  cudaDeviceSynchronize();
+  impl::runArrayedFiveRounds<<<blockDim, gridDim>>>(
+    pdBestScore, pdBestPick, pdOdds, pdSeeds);
+  auto result = cudaDeviceSynchronize();
+
 
   float* pBestScore = new float[blockDim.x * gridDim.x];
   unsigned int* pBestPick = new unsigned int[blockDim.x * gridDim.x];
-  cudaMemcpy(
-    pBestScore, pdBestScore, sizeof(float) * blockDim.x * gridDim.x, cudaMemcpyDeviceToHost);
-  cudaMemcpy(
-    pBestPick, pdBestPick, sizeof(unsigned int) * blockDim.x * gridDim.x, cudaMemcpyDeviceToHost);
+  cudaMemcpy(pBestScore,
+             pdBestScore,
+             sizeof(float) * blockDim.x * gridDim.x,
+             cudaMemcpyDeviceToHost);
+  cudaMemcpy(pBestPick,
+             pdBestPick,
+             sizeof(unsigned int) * blockDim.x * gridDim.x,
+             cudaMemcpyDeviceToHost);
 
   float bestScore = 0.0f;
   unsigned int bestPick = 0;
@@ -352,54 +381,85 @@ void runCudaApproach(const Five38BracketOdds& odds)
   std::cout << std::endl;
   std::cout << "First Round" << std::endl;
 
-  std::cout << odds.m_names[GetIndex<1, 0>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<1, 1>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<1, 2>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<1, 3>::Evaluate(bestPick)] << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<1, 0>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<1, 1>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<1, 2>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<1, 3>::Evaluate(bestPick)]
+            << std::endl;
 
-  std::cout << odds.m_names[GetIndex<1, 4>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<1, 5>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<1, 6>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<1, 7>::Evaluate(bestPick)] << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<1, 4>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<1, 5>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<1, 6>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<1, 7>::Evaluate(bestPick)]
+            << std::endl;
 
-  std::cout << odds.m_names[GetIndex<1, 8>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<1, 9>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<1, 10>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<1, 11>::Evaluate(bestPick)] << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<1, 8>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<1, 9>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<1, 10>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<1, 11>::Evaluate(bestPick)]
+            << std::endl;
 
-  std::cout << odds.m_names[GetIndex<1, 12>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<1, 13>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<1, 14>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<1, 15>::Evaluate(bestPick)] << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<1, 12>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<1, 13>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<1, 14>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<1, 15>::Evaluate(bestPick)]
+            << std::endl;
 
   std::cout << std::endl;
   std::cout << "Second Round" << std::endl;
-  std::cout << odds.m_names[GetIndex<2, 0>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<2, 1>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<2, 2>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<2, 3>::Evaluate(bestPick)] << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<2, 0>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<2, 1>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<2, 2>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<2, 3>::Evaluate(bestPick)]
+            << std::endl;
 
-  std::cout << odds.m_names[GetIndex<2, 4>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<2, 5>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<2, 6>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<2, 7>::Evaluate(bestPick)] << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<2, 4>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<2, 5>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<2, 6>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<2, 7>::Evaluate(bestPick)]
+            << std::endl;
 
   std::cout << std::endl;
   std::cout << "Third round" << std::endl;
-  std::cout << odds.m_names[GetIndex<3, 0>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<3, 1>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<3, 2>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<3, 3>::Evaluate(bestPick)] << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<3, 0>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<3, 1>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<3, 2>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<3, 3>::Evaluate(bestPick)]
+            << std::endl;
 
   std::cout << std::endl;
   std::cout << "Fourth round" << std::endl;
-  std::cout << odds.m_names[GetIndex<4, 0>::Evaluate(bestPick)] << std::endl;
-  std::cout << odds.m_names[GetIndex<4, 1>::Evaluate(bestPick)] << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<4, 0>::Evaluate(bestPick)]
+            << std::endl;
+  std::cout << odds.m_names[GetWinningTeamId<4, 1>::Evaluate(bestPick)]
+            << std::endl;
 
   std::cout << std::endl;
   std::cout << "Fifth round" << std::endl;
-  std::cout << odds.m_names[GetIndex<5, 0>::Evaluate(bestPick)] << std::endl;
-  if( GetIndex<5, 0>::Evaluate(bestPick) > 15 )
+  std::cout << odds.m_names[GetWinningTeamId<5, 0>::Evaluate(bestPick)]
+            << std::endl;
+  if (GetWinningTeamId<5, 0>::Evaluate(bestPick) > 15)
   {
     std::cout << "Lower" << std::endl;
   }
@@ -407,4 +467,97 @@ void runCudaApproach(const Five38BracketOdds& odds)
   {
     std::cout << "Upper" << std::endl;
   }
+
+
+//  std::cout << "Best picks for each block" << std::endl;
+//  for (unsigned int i = 0; i < blockDim.x * gridDim.x; ++i)
+//  {
+//    auto bestPick = pBestPick[i];
+//    auto bestScore = pBestScore[i];
+//    std::cout << "Expected Score = " << bestScore << std::endl;
+//    std::cout << "Pick: " << bestPick << std::endl;
+//    std::cout << std::endl;
+//    std::cout << "First Round" << std::endl;
+
+//    std::cout << odds.m_names[GetWinningTeamId<1, 0>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<1, 1>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<1, 2>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<1, 3>::Evaluate(bestPick)]
+//              << std::endl;
+
+//    std::cout << odds.m_names[GetWinningTeamId<1, 4>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<1, 5>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<1, 6>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<1, 7>::Evaluate(bestPick)]
+//              << std::endl;
+
+//    std::cout << odds.m_names[GetWinningTeamId<1, 8>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<1, 9>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<1, 10>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<1, 11>::Evaluate(bestPick)]
+//              << std::endl;
+
+//    std::cout << odds.m_names[GetWinningTeamId<1, 12>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<1, 13>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<1, 14>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<1, 15>::Evaluate(bestPick)]
+//              << std::endl;
+
+//    std::cout << std::endl;
+//    std::cout << "Second Round" << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<2, 0>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<2, 1>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<2, 2>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<2, 3>::Evaluate(bestPick)]
+//              << std::endl;
+
+//    std::cout << odds.m_names[GetWinningTeamId<2, 4>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<2, 5>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<2, 6>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<2, 7>::Evaluate(bestPick)]
+//              << std::endl;
+
+//    std::cout << std::endl;
+//    std::cout << "Third round" << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<3, 0>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<3, 1>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<3, 2>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<3, 3>::Evaluate(bestPick)]
+//              << std::endl;
+
+//    std::cout << std::endl;
+//    std::cout << "Fourth round" << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<4, 0>::Evaluate(bestPick)]
+//              << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<4, 1>::Evaluate(bestPick)]
+//              << std::endl;
+
+//    std::cout << std::endl;
+//    std::cout << "Fifth round" << std::endl;
+//    std::cout << odds.m_names[GetWinningTeamId<5, 0>::Evaluate(bestPick)]
+//              << std::endl;
+//  }
+
+
 }

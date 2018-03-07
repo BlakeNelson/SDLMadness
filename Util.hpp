@@ -4,16 +4,43 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 
-// Get the mask for teh given round/game.  Round is 1 based, game is 0 based.
-// Games are from the top of the bracket to the bottom on one side only,
-// so 16 first round games, 8 second, and so on.
-
 #ifdef __CUDACC__
 #define DEVICE __host__ __device__
 #else
 #define DEVICE
 #endif
 
+// Every set of picks is represented as a 32-bit integer (representing the
+// 2^31 distinct outcomes that can occur in two regions---it doesn't
+// attempt to evalute all 2^63 since that is 9.223372037×10^18 combinations and
+// is not computationally feasible on my/any hardware).
+// This mask allows us to retrieve the value of a specific game by round
+// and game number.
+// Round 0 - 16 games, 0-7 one region, 8-15 the other
+//    Game 0 - 1/16
+//    Game 1 - 8/9
+//    Game 2 - 5/12
+//    Game 3 - 4/13
+//    Game 4 - 6/11
+//    Game 5 - 3/14
+//    Game 6 - 7/10
+//    Game 7 - 2/15
+//    Game 8 - 1/16
+//    Game 9 - 8/9
+//    Game 10 - 5/12
+//    Game 11 - 4/13
+//    Game 12 - 6/11
+//    Game 13 - 3/14
+//    Game 14 - 7/10
+//    Game 15 - 2/15
+// Round 1 - 8 games
+//    Game 0 - Result0/Result1
+//    Game 1 - Result2/Result3
+//    Game 2 - Result4/Result5
+//    Game 3 - Result6/Result7
+// Round 2 - 4 games
+// Round 3 - 2 games
+// Round 4 - 1 game
 template <unsigned int round, unsigned int game>
 struct GetMask;
 
@@ -205,11 +232,13 @@ struct GetMask<5, 0>
 
 // Returns the index of the chosen winner.
 // 0 means the top team wins, 1 means the bottom team wins.
+
+// Returns the team id for the team that won the given game.
 template <unsigned int round, unsigned int game>
-struct GetIndex;
+struct GetWinningTeamId;
 
 template <unsigned int game>
-struct GetIndex<1, game>
+struct GetWinningTeamId<1, game>
 {
   DEVICE static unsigned int Evaluate(unsigned int pick)
   {
@@ -222,12 +251,12 @@ struct GetIndex<1, game>
 };
 
 template <unsigned int game>
-struct GetIndex<2, game>
+struct GetWinningTeamId<2, game>
 {
   DEVICE static unsigned int Evaluate(unsigned int pick)
   {
-    auto topIdx = GetIndex<1, 2 * game>::Evaluate(pick);
-    auto bottomIdx = GetIndex<1, 2 * game + 1>::Evaluate(pick);
+    auto topIdx = GetWinningTeamId<1, 2 * game>::Evaluate(pick);
+    auto bottomIdx = GetWinningTeamId<1, 2 * game + 1>::Evaluate(pick);
 
     auto mask = GetMask<2, game>::Evaluate();
     auto masked = pick & mask;
@@ -238,12 +267,12 @@ struct GetIndex<2, game>
 };
 
 template <unsigned int game>
-struct GetIndex<3, game>
+struct GetWinningTeamId<3, game>
 {
   DEVICE static unsigned int Evaluate(unsigned int pick)
   {
-    auto topIdx = GetIndex<2, 2 * game>::Evaluate(pick);
-    auto bottomIdx = GetIndex<2, 2 * game + 1>::Evaluate(pick);
+    auto topIdx = GetWinningTeamId<2, 2 * game>::Evaluate(pick);
+    auto bottomIdx = GetWinningTeamId<2, 2 * game + 1>::Evaluate(pick);
 
     auto mask = GetMask<3, game>::Evaluate();
     auto masked = pick & mask;
@@ -254,12 +283,12 @@ struct GetIndex<3, game>
 };
 
 template <unsigned int game>
-struct GetIndex<4, game>
+struct GetWinningTeamId<4, game>
 {
   DEVICE static unsigned int Evaluate(unsigned int pick)
   {
-    auto topIdx = GetIndex<3, 2 * game>::Evaluate(pick);
-    auto bottomIdx = GetIndex<3, 2 * game + 1>::Evaluate(pick);
+    auto topIdx = GetWinningTeamId<3, 2 * game>::Evaluate(pick);
+    auto bottomIdx = GetWinningTeamId<3, 2 * game + 1>::Evaluate(pick);
 
     auto mask = GetMask<4, game>::Evaluate();
     auto masked = pick & mask;
@@ -270,12 +299,12 @@ struct GetIndex<4, game>
 };
 
 template <unsigned int game>
-struct GetIndex<5, game>
+struct GetWinningTeamId<5, game>
 {
   DEVICE static unsigned int Evaluate(unsigned int pick)
   {
-    auto topIdx = GetIndex<4, 2 * game>::Evaluate(pick);
-    auto bottomIdx = GetIndex<4, 2 * game + 1>::Evaluate(pick);
+    auto topIdx = GetWinningTeamId<4, 2 * game>::Evaluate(pick);
+    auto bottomIdx = GetWinningTeamId<4, 2 * game + 1>::Evaluate(pick);
 
     auto mask = GetMask<5, game>::Evaluate();
     auto masked = pick & mask;
@@ -285,42 +314,72 @@ struct GetIndex<5, game>
   }
 };
 
-template<unsigned int round>
+// The CBS site awards point as scaleFactor*picksCorrect per round.
+// The RoundMultipliers captures this value.
+template <unsigned int round>
 struct RoundMultiplier;
 
-template<>
+template <>
 struct RoundMultiplier<1>
 {
-  //static DEVICE float Evaluate() { return 1.0f; }
+  static DEVICE float Evaluate() { return 1.0f; }
+};
+
+template <>
+struct RoundMultiplier<2>
+{
+  static DEVICE float Evaluate() { return 2.0f; }
+};
+
+template <>
+struct RoundMultiplier<3>
+{
+  static DEVICE float Evaluate() { return 4.0f; }
+};
+
+template <>
+struct RoundMultiplier<4>
+{
+  static DEVICE float Evaluate() { return 8.0f; }
+};
+
+template <>
+struct RoundMultiplier<5>
+{
+  static DEVICE float Evaluate() { return 16.0f; }
+};
+
+
+template <unsigned int round>
+struct ESPNRoundMultiplier;
+
+template <>
+struct ESPNRoundMultiplier<1>
+{
   static DEVICE float Evaluate() { return 10.0f; }
 };
 
-template<>
-struct RoundMultiplier<2>
+template <>
+struct ESPNRoundMultiplier<2>
 {
-  //static DEVICE float Evaluate() { return 2.0f; }
   static DEVICE float Evaluate() { return 20.0f; }
 };
 
-template<>
-struct RoundMultiplier<3>
+template <>
+struct ESPNRoundMultiplier<3>
 {
-  //static DEVICE float Evaluate() { return 4.0f; }
   static DEVICE float Evaluate() { return 40.0f; }
 };
 
-
-template<>
-struct RoundMultiplier<4>
+template <>
+struct ESPNRoundMultiplier<4>
 {
-  //static DEVICE float Evaluate() { return 8.0f; }
   static DEVICE float Evaluate() { return 80.0f; }
 };
 
-template<>
-struct RoundMultiplier<5>
+template <>
+struct ESPNRoundMultiplier<5>
 {
-  //static DEVICE float Evaluate() { return 16.0f; }
   static DEVICE float Evaluate() { return 160.0f; }
 };
 
@@ -328,27 +387,32 @@ template <unsigned int round, unsigned int game>
 struct ExpectedResult
 {
   static DEVICE float Evaluate(unsigned int pick,
-                                   const float* __restrict__ pOdds,
-                                   const float* __restrict__ pSeeds)
+                               const float* __restrict__ pOdds,
+                               const float* __restrict__ pSeeds)
   {
-    if( pick == 0 )
+    if (pick == 0)
     {
-      auto idx = GetIndex<round, game>::Evaluate(pick);
-      auto odds = pOdds[idx+32*(round-1)];
+      auto idx = GetWinningTeamId<round, game>::Evaluate(pick);
+      auto odds = pOdds[idx + 32 * (round - 1)];
       auto seed = pSeeds[idx];
       auto mult = RoundMultiplier<round>::Evaluate();
       printf("Round %d Game %d Idx %d odds %f Seed %f multiplier %f\n",
-             round, game, idx, odds, seed, mult);
+             round,
+             game,
+             idx,
+             odds,
+             seed,
+             mult);
     }
-    auto idx = GetIndex<round, game>::Evaluate(pick);
+    auto idx = GetWinningTeamId<round, game>::Evaluate(pick);
     // CBS
-    //return pOdds[idx+32*(round-1)] * pSeeds[idx] * RoundMultiplier<round>::Evaluate();
-    //return pOdds[idx+32*(round-1)];
+//    return pOdds[idx + 32 * (round - 1)] * pSeeds[idx] *
+//           RoundMultiplier<round>::Evaluate();
 
-    // 538
-     return pOdds[idx+32*(round-1)]  * RoundMultiplier<round>::Evaluate();
+    // ESPN
+    return pOdds[idx + 32 * (round - 1)] *
+           ESPNRoundMultiplier<round>::Evaluate();
   }
 };
-
 
 #endif

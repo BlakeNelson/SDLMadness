@@ -17,8 +17,11 @@ namespace
   const std::string SOUTH("South");
   const std::string RIGHT("Right");
   const std::string LEFT("Left");
+  const std::string TOP("Top");
+  const std::string BOTTOM("Bottom");
 
-  std::map<std::string, unsigned int> createHeaderMap(const std::string& headerRow)
+  std::map<std::string, unsigned int> createHeaderMap(
+    const std::string& headerRow)
   {
     std::map<std::string, unsigned int> result;
     boost::char_separator<char> sep(",");
@@ -47,13 +50,29 @@ namespace
   bool getEntryIsValid(const std::string& rowRegion, const std::string& region)
   {
 
+    //    if (region == LEFT)
+    //    {
+    //      return rowRegion == SOUTH || rowRegion == WEST;
+    //    }
+    //    else if (region == RIGHT)
+    //    {
+    //      return rowRegion == EAST || rowRegion == MIDWEST;
+    //    }
     if (region == LEFT)
     {
-      return rowRegion == SOUTH || rowRegion == WEST;
+      return rowRegion == EAST || rowRegion == WEST;
     }
     else if (region == RIGHT)
     {
+      return rowRegion == SOUTH || rowRegion == MIDWEST;
+    }
+    else if (region == TOP)
+    {
       return rowRegion == EAST || rowRegion == MIDWEST;
+    }
+    else if (region == BOTTOM)
+    {
+      return rowRegion == SOUTH || rowRegion == WEST;
     }
     else
     {
@@ -64,6 +83,7 @@ namespace
   unsigned int getNumberOfRounds(const std::string& region)
   {
     if (region == LEFT || region == RIGHT) return 5;
+    if (region == TOP || region == BOTTOM) return 5;
     return 4;
   }
 
@@ -74,69 +94,69 @@ namespace
     unsigned int result;
     switch (seed)
     {
-      case 1:
-        result = 0;
-        break;
+    case 1:
+      result = 0;
+      break;
 
-      case 16:
-        result = 1;
-        break;
+    case 16:
+      result = 1;
+      break;
 
-      case 8:
-        result = 2;
-        break;
+    case 8:
+      result = 2;
+      break;
 
-      case 9:
-        result = 3;
-        break;
+    case 9:
+      result = 3;
+      break;
 
-      case 5:
-        result = 4;
-        break;
+    case 5:
+      result = 4;
+      break;
 
-      case 12:
-        result = 5;
-        break;
+    case 12:
+      result = 5;
+      break;
 
-      case 4:
-        result = 6;
-        break;
+    case 4:
+      result = 6;
+      break;
 
-      case 13:
-        result = 7;
-        break;
+    case 13:
+      result = 7;
+      break;
 
-      case 6:
-        result = 8;
-        break;
+    case 6:
+      result = 8;
+      break;
 
-      case 11:
-        result = 9;
-        break;
+    case 11:
+      result = 9;
+      break;
 
-      case 3:
-        result = 10;
-        break;
+    case 3:
+      result = 10;
+      break;
 
-      case 14:
-        result = 11;
-        break;
+    case 14:
+      result = 11;
+      break;
 
-      case 7:
-        result = 12;
-        break;
+    case 7:
+      result = 12;
+      break;
 
-      case 10:
-        result = 13;
-        break;
+    case 10:
+      result = 13;
+      break;
 
-      case 2:
-        result = 14;
-        break;
+    case 2:
+      result = 14;
+      break;
 
-      case 15:
-        result = 15;
-        break;
+    case 15:
+      result = 15;
+      break;
     }
 
     if (region == LEFT && rowRegion == WEST)
@@ -144,6 +164,14 @@ namespace
       result += 16;
     }
     if (region == RIGHT && rowRegion == MIDWEST)
+    {
+      result += 16;
+    }
+    if (region == TOP && rowRegion == MIDWEST)
+    {
+      result += 16;
+    }
+    if (region == BOTTOM && rowRegion == SOUTH)
     {
       result += 16;
     }
@@ -159,45 +187,45 @@ namespace
     unsigned int divisor = 0x01 << (round - 1);
     switch (seed)
     {
-      case 1:
-      case 16:
-        result = 0 / divisor;
-        break;
+    case 1:
+    case 16:
+      result = 0 / divisor;
+      break;
 
-      case 8:
-      case 9:
-        result = 1 / divisor;
-        break;
+    case 8:
+    case 9:
+      result = 1 / divisor;
+      break;
 
-      case 5:
-      case 12:
-        result = 2 / divisor;
-        break;
+    case 5:
+    case 12:
+      result = 2 / divisor;
+      break;
 
-      case 4:
-      case 13:
-        result = 3 / divisor;
-        break;
+    case 4:
+    case 13:
+      result = 3 / divisor;
+      break;
 
-      case 6:
-      case 11:
-        result = 4 / divisor;
-        break;
+    case 6:
+    case 11:
+      result = 4 / divisor;
+      break;
 
-      case 3:
-      case 14:
-        result = 5 / divisor;
-        break;
+    case 3:
+    case 14:
+      result = 5 / divisor;
+      break;
 
-      case 7:
-      case 10:
-        result = 6 / divisor;
-        break;
+    case 7:
+    case 10:
+      result = 6 / divisor;
+      break;
 
-      case 2:
-      case 15:
-        result = 7 / divisor;
-        break;
+    case 2:
+    case 15:
+      result = 7 / divisor;
+      break;
     }
 
     if (region == LEFT && rowRegion == WEST)
@@ -205,6 +233,14 @@ namespace
       result += 8 / divisor;
     }
     if (region == RIGHT && rowRegion == MIDWEST)
+    {
+      result += 8 / divisor;
+    }
+    if (region == TOP && rowRegion == MIDWEST)
+    {
+      result += 8 / divisor;
+    }
+    if (region == BOTTOM && rowRegion == SOUTH)
     {
       result += 8 / divisor;
     }
@@ -219,7 +255,8 @@ class Five38BracketOdds
 public:
   Five38BracketOdds() {}
 
-  Five38BracketOdds(const std::string& filePath, const std::string& region) : m_odds()
+  Five38BracketOdds(const std::string& filePath, const std::string& region)
+    : m_odds()
   {
     // The file is a tab-delimited file, with first row header.
     // I will want to slice and dice the bracket construction, so I would like
@@ -235,7 +272,8 @@ public:
 
     for (std::string line; std::getline(inFile, line);)
     {
-      // Createa column number/value map.
+      if (!line.empty() && line[0] == '#') continue;
+      // Create column number/value map.
       auto values = createValueMap(line);
 
       // Populate the data.
@@ -244,16 +282,18 @@ public:
 
       if (!getEntryIsValid(rowRegion, region)) continue;
 
-      auto seed = boost::lexical_cast<unsigned int>(values[headerMap["team_seed"]]);
+      auto seed =
+        boost::lexical_cast<unsigned int>(values[headerMap["team_seed"]]);
       auto teamNumber = getTeamNumber(seed, rowRegion, region);
       m_seeds[teamNumber] = seed;
       m_names[teamNumber] = name;
-      double roundOdds[] = {boost::lexical_cast<double>(values[headerMap["rd2_win"]]),
-                            boost::lexical_cast<double>(values[headerMap["rd3_win"]]),
-                            boost::lexical_cast<double>(values[headerMap["rd4_win"]]),
-                            boost::lexical_cast<double>(values[headerMap["rd5_win"]]),
-                            boost::lexical_cast<double>(values[headerMap["rd6_win"]]),
-                            boost::lexical_cast<double>(values[headerMap["rd7_win"]])};
+      double roundOdds[] = {
+        boost::lexical_cast<double>(values[headerMap["rd2_win"]]),
+        boost::lexical_cast<double>(values[headerMap["rd3_win"]]),
+        boost::lexical_cast<double>(values[headerMap["rd4_win"]]),
+        boost::lexical_cast<double>(values[headerMap["rd5_win"]]),
+        boost::lexical_cast<double>(values[headerMap["rd6_win"]]),
+        boost::lexical_cast<double>(values[headerMap["rd7_win"]])};
 
       unsigned int numRounds = getNumberOfRounds(region);
       for (unsigned int round = 0; round < numRounds; ++round)
@@ -271,7 +311,7 @@ public:
   void set(const Team& t, unsigned int round, unsigned int game, double odds)
   {
     GameIndex idx(round, game);
-    m_odds[idx][t]=odds;
+    m_odds[idx][t] = odds;
   }
 
   // Iterator through all combinations of picks represented by this bracket.
@@ -294,7 +334,8 @@ public:
     };
 
   public:
-    PickIterator(const std::map<GameIndex, std::map<Team, double>>& d, bool isBegin)
+    PickIterator(const std::map<GameIndex, std::map<Team, double>>& d,
+                 bool isBegin)
     {
       for (const auto& iter : d)
       {
@@ -316,7 +357,8 @@ public:
       if (m_data.size() != rhs.m_data.size()) return false;
 
       // end detection
-      if (m_data.rbegin()->second.done() && rhs.m_data.rbegin()->second.done()) return true;
+      if (m_data.rbegin()->second.done() && rhs.m_data.rbegin()->second.done())
+        return true;
 
       for (const auto& iter : m_data)
       {
@@ -339,16 +381,15 @@ public:
     PickIterator& operator++()
     {
       auto last = m_data.begin();
-      for(auto iter = m_data.begin(); iter != m_data.end(); ++iter)
+      for (auto iter = m_data.begin(); iter != m_data.end(); ++iter)
       {
         last = iter;
       }
 
-
       // Starting at the first game, we increment the local iterator.
       // If we overflow, we reset the current and move onto the next one.
       // If there is no next iterator, then we do not reset the current
-      for(auto iter = m_data.begin(); iter != m_data.end(); ++iter)
+      for (auto iter = m_data.begin(); iter != m_data.end(); ++iter)
       {
         auto& data = iter->second;
         data.advance();
