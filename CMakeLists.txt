@@ -15,11 +15,7 @@ include_directories(/usr/local/smc/lib ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRE
 
 # Library
 set(srcs
-  explore.hpp
-  explore.cpp
-  Pick.hpp
   BracketOdds.hpp
-  FindBestPick.hpp
   GameIndex.hpp
   CudaApproach.cuh
   CudaApproach.cu

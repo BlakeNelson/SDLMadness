@@ -257,16 +257,12 @@ namespace impl
     float bestScore = 0.0f;
     unsigned int bestPick = 0;
     auto idx = blockDim.x * blockIdx.x + threadIdx.x;
-    unsigned int gridSize = gridDim.x * blockDim.x;
+    unsigned int gridStride = gridDim.x * blockDim.x;
     unsigned int maxInt = 0x7FFFFFFF;
-    // Assumes a power of 2 grid size.
-    unsigned int numIterations = (maxInt+1) / gridSize + 4;
-    for (int i = 0; i <= numIterations; ++i)
+
+    for (int pick = blockDim.x * blockIdx.x + threadIdx.x; pick < maxInt;
+         pick += gridStride)
     {
-
-      unsigned int pick = idx + i * gridSize;
-      if (pick > maxInt) continue;
-
       auto score = runFifthRound(pick, pOdds, pSeeds);
       if (idx == 0)
       {
@@ -287,22 +283,13 @@ namespace impl
 
 void runCudaApproach(const Five38BracketOdds& odds)
 {
-  // I want to run 2, 4, 8, 16 input games (the 2 and 4 for debugging purposes).
-  // I can look at coding it to handle it, or maybe there are some predicted
-  // values I can set that will just fall out.
-  dim3 blockDim;
-  blockDim.x = 256;
-  blockDim.y = 1;
-  blockDim.z = 1;
+  dim3 blockDim {256, 1, 1};
+  dim3 gridDim {1024, 1, 1};
 
-  dim3 gridDim;
-  gridDim.x = 1024;
-  // Each thread calculates one game.  May be less efficient, but will allow
-  // examination of the ordering.
-  //gridDim.x = 8388608/4;
-  gridDim.y = 1;
-  gridDim.z = 1;
-
+  // Each thread examines multiple games (using grid striding).  After it
+  // calculates a game, it ccompares the results to all other games it has
+  // evaluated and stores the score and pick in these arrays.  Additional
+  // processing is required to find the global best.
   float* pdBestScore;
   unsigned int* pdBestPick;
   cudaMalloc(&pdBestScore, sizeof(float) * blockDim.x * gridDim.x);

@@ -22,8 +22,6 @@
 
 #include "BracketOdds.hpp"
 #include "CudaApproach.cuh"
-#include "Pick.hpp"
-#include "explore.hpp"
 #include <iostream>
 #include <limits>
 

@@ -460,4 +460,19 @@ inline std::ostream& operator<<(std::ostream& os, const Five38BracketOdds& odds)
   return os;
 }
 
+/** Structure to track a bracket and associated odds. */
+template<unsigned int TeamCount>
+struct BracketOdds
+{
+  static constexpr unsigned int RoundCount = std::log2(TeamCount);
+
+  void setOdds(unsigned int teamIdx, unsigned int round, float pct)
+  {
+    odds[round*TeamCount + teamIdx] = pct;
+  }
+  // each round has TeamCount odds.
+  float odds[TeamCount*RoundCount];
+  float seeds[TeamCount];
+};
+
 #endif
