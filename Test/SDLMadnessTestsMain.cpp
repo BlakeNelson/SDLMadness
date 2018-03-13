@@ -101,6 +101,37 @@ BOOST_AUTO_TEST_CASE(TestchanceOfPickOccurring)
   BOOST_CHECK_CLOSE(result, 1.0, 1e-3);
 }
 
+BOOST_AUTO_TEST_CASE(TestChanceOfPickOccurring)
+{
+  BracketOdds<4> odds;
+  odds.odds[0] = .2;
+  odds.odds[1] = .8;
+  odds.odds[2] = .3;
+  odds.odds[3] = .7;
+  odds.odds[4] = .1;
+  odds.odds[5] = .7;
+  odds.odds[6] = .05;
+  odds.odds[7] = .15;
+
+  std::cout << "Original" << std::endl;
+  Float f = 0.0;
+  for(unsigned int i = 0; i < 8; ++i)
+  {
+    f += odds.chanceOfPickOccurring(i);
+    std::cout << odds.chanceOfPickOccurring(i) << std::endl;
+  }
+  std::cout << "Total: " << f << std::endl;
+
+  f = 0.0;
+  for(unsigned int i = 0; i < 8; ++i)
+  {
+    f += odds.chanceOfPickOccurringBackward(i);
+    std::cout << odds.chanceOfPickOccurringBackward(i) << std::endl;
+  }
+  std::cout << "Total: " << f << std::endl;
+
+}
+
 BOOST_AUTO_TEST_CASE(TestBracketGetOddsStats)
 {
   //  BracketOdds<4> odds;
@@ -129,18 +160,18 @@ BOOST_AUTO_TEST_CASE(TestBracketGetOddsStats)
   std::cout << "Avg: " << quarterOdds.avg << std::endl;
   std::cout << "Std: " << quarterOdds.stddev << std::endl;
 
-//    auto fullOdds =
-//      createFrom538File("fivethirtyeight_ncaa_forecasts_2018.csv", "Left");
-//    std::cout << "Left odds" << std::endl;
-//    auto stats = fullOdds.getOddsStats();
-//    std::cout << "Min: " << stats.min << std::endl;
-//    std::cout << "Min Pick: " << stats.minPick << std::endl;
-//    fullOdds.printBracket(stats.minPick);
-//    std::cout << "Max: " << stats.max << std::endl;
-//    std::cout << "Max Pick: " << stats.maxPick << std::endl;
-//    fullOdds.printBracket(stats.maxPick);
-//    std::cout << "Avg: " << stats.avg << std::endl;
-//    std::cout << "Std: " << stats.stddev << std::endl;
+  //    auto fullOdds =
+  //      createFrom538File("fivethirtyeight_ncaa_forecasts_2018.csv", "Left");
+  //    std::cout << "Left odds" << std::endl;
+  //    auto stats = fullOdds.getOddsStats();
+  //    std::cout << "Min: " << stats.min << std::endl;
+  //    std::cout << "Min Pick: " << stats.minPick << std::endl;
+  //    fullOdds.printBracket(stats.minPick);
+  //    std::cout << "Max: " << stats.max << std::endl;
+  //    std::cout << "Max Pick: " << stats.maxPick << std::endl;
+  //    fullOdds.printBracket(stats.maxPick);
+  //    std::cout << "Avg: " << stats.avg << std::endl;
+  //    std::cout << "Std: " << stats.stddev << std::endl;
 }
 // template <unsigned int round, unsigned int game>
 // struct ExpectedTreeResult

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 set(lib_name SDLMadness)
-set(exe_name SDLMadness2017)
+set(exe_name SDLMadness2018)
 project(${exe_name})
 
 # Extern Pro
@@ -36,7 +36,10 @@ source_group("Source" FILES ${srcs})
 
 cuda_add_library(${lib_name} ${srcs})
 cuda_add_executable(${exe_name} ${exe_srcs})
+add_executable(MonteCarlo MonteCarlo.cpp)
 target_link_libraries(${exe_name} ${CUDA_LIBRARIES} ${lib_name})
 target_include_directories(${exe_name} ${externIncs})
+target_link_libraries(MonteCarlo ${lib_name})
+target_include_directories(MonteCarlo ${externIncs})
 add_subdirectory(Test)
 xpPostBuildCopy(${lib_name} ${CMAKE_CURRENT_SOURCE_DIR}/Test/fivethirtyeight_ncaa_forecasts_2018.csv .)

@@ -464,6 +464,29 @@ struct Pick
   unsigned int value;
 };
 
+struct BestPick
+{
+  void updateMinMax(Float score, unsigned int pick)
+  {
+    if (score < minScore)
+    {
+      minScore = score;
+      minPick = pick;
+    }
+
+    if (score > maxScore)
+    {
+      maxScore = score;
+      maxPick = pick;
+    }
+  }
+  unsigned int minPick{0};
+  unsigned int maxPick{0};
+
+  Float minScore{std::numeric_limits<Float>::max()};
+  Float maxScore{std::numeric_limits<Float>::min()};
+};
+
 struct Stats
 {
   void updateMinMax(Float score, unsigned int pick)
@@ -501,6 +524,23 @@ struct BracketOdds
       std::cout << "Round " << round << std::endl;
       for (unsigned int game = 0; game < gamesInRound(round); ++game)
       {
+        auto winningTeam = getWinningTeamIdx(pick, round, game);
+        std::cout << names[winningTeam] << " (" << seeds[winningTeam] << ")"
+                  << std::endl;
+      }
+    }
+  }
+
+  void printPick(unsigned int pick)
+  {
+    for (unsigned int round = 0; round < RoundCount; ++round)
+    {
+      std::cout << std::endl;
+      std::cout << "Round " << round << std::endl;
+      std::cout << "====================" << std::endl;
+      for (unsigned int game = 0; game < gamesInRound(round); ++game)
+      {
+
         auto winningTeam = getWinningTeamIdx(pick, round, game);
         std::cout << names[winningTeam] << " (" << seeds[winningTeam] << ")"
                   << std::endl;
@@ -554,6 +594,60 @@ struct BracketOdds
                   << std::endl;
       }
     }
+  }
+
+  Float sumOdds()
+  {
+    auto numThreads = std::thread::hardware_concurrency();
+    Float result;
+    unsigned int n = (0x01u << (TeamCount - 1));
+    if (n < 8)
+    {
+      numThreads = 1;
+    }
+
+    ///////////////////
+    // For debugging
+    // numThreads = 1;
+    // std::ofstream traceFile("trace.txt");
+    ////
+    std::vector<std::future<Float>> partialSums;
+    for (unsigned int tid = 0; tid < numThreads; ++tid)
+    {
+      unsigned int picksPerThread = n / numThreads;
+      unsigned int startPick = tid * picksPerThread;
+      unsigned int endPick = startPick + picksPerThread;
+      if (tid == numThreads - 1)
+      {
+        endPick = n;
+      }
+
+      partialSums.push_back(
+        // std::async(std::launch::async, [this, startPick, endPick,
+        // &traceFile]() {
+        std::async(std::launch::async, [this, startPick, endPick]() {
+          Float result;
+          for (unsigned int pick = startPick; pick < endPick; ++pick)
+          {
+            if (pick % 100000 == 0)
+            {
+              std::cout << static_cast<Float>(pick - startPick) /
+                             (endPick - startPick)
+                        << std::endl;
+            }
+            auto gameOdds = chanceOfPickOccurring(Pick(pick));
+            result += gameOdds;
+          }
+          return result;
+        }));
+    }
+
+    for (auto&& f : partialSums)
+    {
+      result += f.get();
+    }
+
+    return result;
   }
 
   /** The games give a lot of points for correct picks, so much so that I
@@ -630,6 +724,77 @@ struct BracketOdds
     return result;
   }
 
+  unsigned int findBestPickBackwards()
+  {
+    auto numThreads = std::thread::hardware_concurrency();
+    BestPick result;
+    unsigned int n = (0x01u << (TeamCount - 1));
+    if (n < 8)
+    {
+      numThreads = 1;
+    }
+
+    ///////////////////
+    // For debugging
+    // numThreads = 1;
+    // std::ofstream traceFile("trace.txt");
+    ////
+    std::vector<std::future<BestPick>> partialPicks;
+    for (unsigned int tid = 0; tid < numThreads; ++tid)
+    {
+      unsigned int picksPerThread = n / numThreads;
+      unsigned int startPick = tid * picksPerThread;
+      unsigned int endPick = startPick + picksPerThread;
+      if (tid == numThreads - 1)
+      {
+        endPick = n;
+      }
+
+      partialPicks.push_back(
+        // std::async(std::launch::async, [this, startPick, endPick,
+        // &traceFile]() {
+        std::async(std::launch::async, [this, startPick, endPick]() {
+          BestPick result;
+          for (unsigned int pick = startPick; pick < endPick; ++pick)
+          {
+            if (pick % 100000 == 0)
+            {
+              std::cout << static_cast<Float>(pick - startPick) /
+                             (endPick - startPick)
+                        << std::endl;
+            }
+            auto odds = chanceOfPickOccurringBackward(pick);
+            if (odds > 0)
+            {
+              auto score = odds*pickUnweightedScore(pick);
+              result.updateMinMax(score, pick);
+            }
+          }
+          return result;
+        }));
+    }
+
+    for (auto&& f : partialPicks)
+    {
+      auto partialStats = f.get();
+      if (partialStats.minScore < result.minScore)
+      {
+        result.minScore = partialStats.minScore;
+        result.minPick = partialStats.minPick;
+      }
+
+      if (partialStats.maxScore > result.maxScore)
+      {
+        result.maxScore = partialStats.maxScore;
+        result.maxPick = partialStats.maxPick;
+      }
+    }
+
+    //traceOdds(result.maxPick);
+    std::cout << "Best pick = " << result.maxPick << std::endl;
+    return result.maxPick;
+  }
+
   unsigned int findBestPick()
   {
     auto numThreads = std::thread::hardware_concurrency();
@@ -704,6 +869,23 @@ struct BracketOdds
     return result.maxPick;
   }
 
+  Float pickScoreOriginalMethod(Pick pick)
+  {
+    Float result = 1.0;
+    Float weight = 1.0;
+    for (unsigned int round = 0; round < RoundCount; ++round)
+    {
+      for (unsigned int game = 0; game < gamesInRound(round); ++game)
+      {
+        auto winningTeam = getWinningTeamIdx(pick, round, game);
+        auto winningTeamRawOdds = odds[round * TeamCount + winningTeam];
+        result += weight * seeds[winningTeam] * winningTeamRawOdds;
+      }
+      weight *= 2.0;
+    }
+    return result;
+  }
+
   Float pickScore(Pick pick)
   {
     Float result = 1.0;
@@ -724,11 +906,44 @@ struct BracketOdds
         auto loosingTeamRawOdds = odds[round * TeamCount + loosingTeam];
         result += weight * seeds[winningTeam] * winningTeamRawOdds /
                   (winningTeamRawOdds + loosingTeamRawOdds);
+        // result += weight * seeds[winningTeam] * winningTeamRawOdds;
       }
       weight *= 2.0;
     }
     return result;
   }
+
+  Float pickUnweightedScore(Pick pick)
+  {
+    Float result = 1.0;
+    Float weight = 1.0;
+    for (unsigned int round = 0; round < RoundCount; ++round)
+    {
+      for (unsigned int game = 0; game < gamesInRound(round); ++game)
+      {
+        auto winningTeam = getWinningTeamIdx(pick, round, game);
+        result += weight * seeds[winningTeam];
+      }
+      weight *= 2.0;
+    }
+    return result;
+  }
+
+  Float chanceOfPickOccurringOriginalMethod(Pick pick)
+  {
+    Float result = 1.0;
+    for (unsigned int round = 0; round < RoundCount; ++round)
+    {
+      for (unsigned int game = 0; game < gamesInRound(round); ++game)
+      {
+        auto winningTeam = getWinningTeamIdx(pick, round, game);
+        auto winningTeamRawOdds = odds[round * TeamCount + winningTeam];
+        result *= winningTeamRawOdds;
+      }
+    }
+    return result;
+  }
+
   Float chanceOfPickOccurring(Pick pick)
   {
     Float result = 1.0;
@@ -746,8 +961,29 @@ struct BracketOdds
 
         auto winningTeamRawOdds = odds[round * TeamCount + winningTeam];
         auto loosingTeamRawOdds = odds[round * TeamCount + loosingTeam];
+        // result *= winningTeamRawOdds;
         result *=
           winningTeamRawOdds / (winningTeamRawOdds + loosingTeamRawOdds);
+      }
+    }
+    return result;
+  }
+
+  Float chanceOfPickOccurringBackward(Pick pick)
+  {
+    auto ultimateWinnerIdx = getWinningTeamIdx(pick, RoundCount - 1, 0);
+
+    Float result = odds[(RoundCount - 1) * TeamCount + ultimateWinnerIdx];
+
+    for (unsigned int round = 0; round < RoundCount; ++round)
+    {
+      for (unsigned int game = 0; game < gamesInRound(round); ++game)
+      {
+        auto winningTeam = getWinningTeamIdx(pick, round, game);
+        if (winningTeam == ultimateWinnerIdx) continue;
+
+        auto winningTeamRawOdds = odds[round * TeamCount + winningTeam];
+        result *= winningTeamRawOdds;
       }
     }
     return result;

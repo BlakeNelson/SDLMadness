@@ -25,56 +25,34 @@
 #include <iostream>
 #include <limits>
 
+template<unsigned int n>
+void calculateOdds(const BracketOdds<n>& bracket, unsigned int pick)
+{
+  // Create a random number to represent a specific outcome.
+}
+
 int main(int argc, char** argv)
 {
-  if (argc != 3 && argc != 4)
+  if (argc != 4)
   {
-    std::cerr << "Usage: SDLMadness <odds file> <type>" << std::endl;
+    std::cerr << "Usage: MonteCarlos <odds file> <type> <pick>" << std::endl;
   }
 
   std::string oddsFile(argv[1]);
   std::string type(argv[2]);
-  std::cout.precision(std::numeric_limits<Float>::digits10);
-  if (argc == 3)
+  unsigned int pick = boost::lexical_cast<unsigned int>(argv[3]);
+
+  if (type == "Left" || type == "Right")
   {
-    if (type == "Left" || type == "Right")
-    {
-      auto fullOdds =
-        createFrom538File(oddsFile, type);
-      auto bestPick = fullOdds.findBestPickBackwards();
-      std::cout << bestPick << std::endl;
-      fullOdds.printPick(bestPick);
-    }
-    else
-    {
-      auto r = toRegion(argv[2]);
-      auto quarterBracket = createQuarterBracketFrom538File(
-        oddsFile, r);
-      auto bestPick = quarterBracket.findBestPickBackwards();
-      std::cout << bestPick << std::endl;
-      quarterBracket.printPick(bestPick);
-    }
+    auto fullOdds = createFrom538File(oddsFile, type);
+    calculateOdds(fullOdds, pick);
   }
   else
   {
-    if (type == "Left" || type == "Right")
-    {
-      auto fullOdds =
-        createFrom538File(oddsFile, type);
-
-      unsigned int pick =boost::lexical_cast<unsigned int>(argv[3]);
-      fullOdds.traceOdds(pick);
-      std::cout << "Score = " << fullOdds.pickScore(pick) << std::endl;
-    }
-    else
-    {
-      auto r = toRegion(argv[2]);
-      auto quarterBracket = createQuarterBracketFrom538File(
-        oddsFile, r);
-      unsigned int pick =boost::lexical_cast<unsigned int>(argv[3]);
-      quarterBracket.traceOdds(pick);
-      std::cout << "Score = " << quarterBracket.pickScore(pick) << std::endl;
-    }
+    auto r = toRegion(type);
+    auto quarterBracket = createQuarterBracketFrom538File(oddsFile, r);
+    calculateOdds(quarterBracket, pick);
   }
+
   return 0;
 }
