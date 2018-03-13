@@ -25,19 +25,102 @@
 #include <iostream>
 #include <limits>
 
-int main()
+int main(int argc, char** argv)
 {
+  //  {
+  //    std::cout << "Left" << std::endl;
+  //    std::cout << "------------------------" << std::endl;
+  //    Five38BracketOdds bracket("fivethirtyeight_ncaa_forecasts.csv", "Left");
+  //    runCudaApproach(bracket);
+  //  }
+  //  {
+  //    std::cout << "Right" << std::endl;
+  //    std::cout << "------------------------" << std::endl;
+  //    Five38BracketOdds bracket("fivethirtyeight_ncaa_forecasts.csv",
+  //    "Right");
+  //    runCudaApproach(bracket);
+  //  }
+
+  if (argc != 3 && argc != 4)
   {
-    std::cout << "Left" << std::endl;
-    std::cout << "------------------------" << std::endl;
-    Five38BracketOdds bracket("fivethirtyeight_ncaa_forecasts.csv", "Left");
-    runCudaApproach(bracket);
+    std::cerr << "Usage: SDLMadness <odds file> <type>" << std::endl;
   }
+
+  std::string oddsFile(argv[1]);
+  std::string type(argv[2]);
+  std::cout.precision(std::numeric_limits<Float>::digits10);
+  if (argc == 3)
   {
-    std::cout << "Right" << std::endl;
-    std::cout << "------------------------" << std::endl;
-    Five38BracketOdds bracket("fivethirtyeight_ncaa_forecasts.csv", "Right");
-    runCudaApproach(bracket);
+    if (type == "Left" || type == "Right")
+    {
+      auto fullOdds =
+        createFrom538File(oddsFile, type);
+      auto bestPick = fullOdds.findBestPick();
+      std::cout << bestPick << std::endl;
+    }
+    else
+    {
+      auto r = toRegion(argv[2]);
+      auto quarterBracket = createQuarterBracketFrom538File(
+        oddsFile, r);
+      auto bestPick = quarterBracket.findBestPick();
+      std::cout << bestPick << std::endl;
+    }
+  }
+//  if (argc == 2)
+//  {
+//    if (type == "Left" || type == "Right")
+//    {
+//      auto fullOdds =
+//        createFrom538File("fivethirtyeight_ncaa_forecasts_2018.csv", type);
+//      std::cout << "Left odds" << std::endl;
+//      auto stats = fullOdds.getOddsStats();
+//      std::cout << "Min: " << stats.min << std::endl;
+//      std::cout << "Min Pick: " << stats.minPick << std::endl;
+//      fullOdds.printBracket(stats.minPick);
+//      std::cout << "Max: " << stats.max << std::endl;
+//      std::cout << "Max Pick: " << stats.maxPick << std::endl;
+//      fullOdds.printBracket(stats.maxPick);
+//      std::cout << "Avg: " << stats.avg << std::endl;
+//      std::cout << "Std: " << stats.stddev << std::endl;
+//    }
+//    else
+//    {
+//      auto r = toRegion(argv[1]);
+//      auto quarterBracket = createQuarterBracketFrom538File(
+//        "fivethirtyeight_ncaa_forecasts_2018.csv", r);
+//      auto quarterOdds = quarterBracket.getOddsStats();
+//      std::cout << "West odds" << std::endl;
+//      std::cout << "Min: " << quarterOdds.min << std::endl;
+//      std::cout << "Min Pick: " << quarterOdds.minPick << std::endl;
+//      quarterBracket.printBracket(quarterOdds.minPick);
+//      std::cout << "Max: " << quarterOdds.max << std::endl;
+//      std::cout << "Max Pick: " << quarterOdds.maxPick << std::endl;
+//      quarterBracket.printBracket(quarterOdds.maxPick);
+//      std::cout << "Avg: " << quarterOdds.avg << std::endl;
+//      std::cout << "Std: " << quarterOdds.stddev << std::endl;
+//    }
+//  }
+  else
+  {
+    if (type == "Left" || type == "Right")
+    {
+      auto fullOdds =
+        createFrom538File(oddsFile, type);
+
+      unsigned int pick =boost::lexical_cast<unsigned int>(argv[3]);
+      fullOdds.traceOdds(pick);
+      std::cout << "Score = " << fullOdds.pickScore(pick) << std::endl;
+    }
+    else
+    {
+      auto r = toRegion(argv[2]);
+      auto quarterBracket = createQuarterBracketFrom538File(
+        oddsFile, r);
+      unsigned int pick =boost::lexical_cast<unsigned int>(argv[3]);
+      quarterBracket.traceOdds(pick);
+      std::cout << "Score = " << quarterBracket.pickScore(pick) << std::endl;
+    }
   }
   return 0;
 }

@@ -16,7 +16,6 @@ include_directories(/usr/local/smc/lib ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRE
 # Library
 set(srcs
   BracketOdds.hpp
-  GameIndex.hpp
   CudaApproach.cuh
   CudaApproach.cu
   Util.hpp
@@ -40,3 +39,4 @@ cuda_add_executable(${exe_name} ${exe_srcs})
 target_link_libraries(${exe_name} ${CUDA_LIBRARIES} ${lib_name})
 target_include_directories(${exe_name} ${externIncs})
 add_subdirectory(Test)
+xpPostBuildCopy(${lib_name} ${CMAKE_CURRENT_SOURCE_DIR}/Test/fivethirtyeight_ncaa_forecasts_2018.csv .)
