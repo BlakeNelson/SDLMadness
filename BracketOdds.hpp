@@ -57,14 +57,14 @@ namespace
   bool getEntryIsValid(const std::string& rowRegion, const std::string& region)
   {
 
-    //    if (region == LEFT)
-    //    {
-    //      return rowRegion == SOUTH || rowRegion == WEST;
-    //    }
-    //    else if (region == RIGHT)
-    //    {
-    //      return rowRegion == EAST || rowRegion == MIDWEST;
-    //    }
+    if (region == LEFT)
+    {
+      return rowRegion == SOUTH || rowRegion == WEST;
+    }
+    else if (region == RIGHT)
+    {
+      return rowRegion == EAST || rowRegion == MIDWEST;
+    }
     if (region == LEFT)
     {
       return rowRegion == EAST || rowRegion == WEST;
@@ -766,7 +766,7 @@ struct BracketOdds
             auto odds = chanceOfPickOccurringBackward(pick);
             if (odds > 0)
             {
-              auto score = odds*pickUnweightedScore(pick);
+              auto score = odds * pickUnweightedScore(pick);
               result.updateMinMax(score, pick);
             }
           }
@@ -790,7 +790,7 @@ struct BracketOdds
       }
     }
 
-    //traceOdds(result.maxPick);
+    // traceOdds(result.maxPick);
     std::cout << "Best pick = " << result.maxPick << std::endl;
     return result.maxPick;
   }
@@ -913,9 +913,27 @@ struct BracketOdds
     return result;
   }
 
+  void tracePickUnweightedScore(Pick pick)
+  {
+    Float result = 0.0;
+    Float weight = 1.0;
+    for (unsigned int round = 0; round < RoundCount; ++round)
+    {
+      for (unsigned int game = 0; game < gamesInRound(round); ++game)
+      {
+        auto winningTeam = getWinningTeamIdx(pick, round, game);
+        std::cout << names[winningTeam] << "(" << seeds[winningTeam] << ") - "
+                  << result << " += " << weight * seeds[winningTeam]
+                  << std::endl;
+        result += weight * seeds[winningTeam];
+      }
+      weight *= 2.0;
+    }
+  }
+
   Float pickUnweightedScore(Pick pick)
   {
-    Float result = 1.0;
+    Float result = 0.0;
     Float weight = 1.0;
     for (unsigned int round = 0; round < RoundCount; ++round)
     {

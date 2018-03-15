@@ -44,6 +44,9 @@ int main(int argc, char** argv)
       auto bestPick = fullOdds.findBestPickBackwards();
       std::cout << bestPick << std::endl;
       fullOdds.printPick(bestPick);
+      std::cout << "Final score is " << fullOdds.chanceOfPickOccurring(bestPick) *
+                   fullOdds.pickUnweightedScore(bestPick) << std::endl;
+      fullOdds.tracePickUnweightedScore(bestPick);
     }
     else
     {
@@ -53,6 +56,9 @@ int main(int argc, char** argv)
       auto bestPick = quarterBracket.findBestPickBackwards();
       std::cout << bestPick << std::endl;
       quarterBracket.printPick(bestPick);
+      std::cout << "Final score is " << quarterBracket.chanceOfPickOccurring(bestPick) *
+                   quarterBracket.pickUnweightedScore(bestPick) << std::endl;
+      quarterBracket.tracePickUnweightedScore(bestPick);
     }
   }
   else
