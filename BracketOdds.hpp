@@ -65,14 +65,6 @@ namespace
     {
       return rowRegion == EAST || rowRegion == MIDWEST;
     }
-    if (region == LEFT)
-    {
-      return rowRegion == EAST || rowRegion == WEST;
-    }
-    else if (region == RIGHT)
-    {
-      return rowRegion == SOUTH || rowRegion == MIDWEST;
-    }
     else if (region == TOP)
     {
       return rowRegion == EAST || rowRegion == MIDWEST;
@@ -1007,6 +999,74 @@ struct BracketOdds
     return result;
   }
 
+  Float chanceOfPickOccurringBackwardTree(Pick pick)
+  {
+    auto ultimateWinnerIdx = getWinningTeamIdx(pick, RoundCount - 1, 0);
+    Float result = odds[(RoundCount - 1) * TeamCount + ultimateWinnerIdx];
+
+    // I have two children.  In one child, the ultimate winner is also the
+    // winner of the subtree.  In the other, I don't know.
+    Float firstSubtreeOdds = chanceOfPickOccurringBackwardTree(
+      pick, RoundCount - 2, 0, ultimateWinnerIdx);
+    Float secondSubtreeOdds = chanceOfPickOccurringBackwardTree(
+      pick, RoundCount - 2, 1, ultimateWinnerIdx);
+
+    return result * firstSubtreeOdds * secondSubtreeOdds;
+  }
+
+  std::pair<unsigned int, unsigned int> getPossibleWinningTeams(
+    unsigned int round, unsigned int game)
+  {
+    unsigned int teamCount = 0x01 << (round+1);
+    unsigned int firstTeam = game*teamCount;
+    return std::make_pair(firstTeam, firstTeam+teamCount);
+  }
+
+  Float chanceOfPickOccurringBackwardTree(Pick pick,
+                                          unsigned int round,
+                                          unsigned int game,
+                                          unsigned int ultimateWinnerIdx)
+  {
+    if (round == 0)
+    {
+      auto localWinnerIdx = getWinningTeamIdx(pick, round, game);
+      if( localWinnerIdx == ultimateWinnerIdx )
+      {
+        return 1.0;
+      }
+      else
+      {
+        return odds[localWinnerIdx];
+      }
+    }
+    else
+    {
+      auto localWinnerIdx = getWinningTeamIdx(pick, round, game);
+
+      if (localWinnerIdx == ultimateWinnerIdx)
+      {
+        Float firstSubtreeOdds = chanceOfPickOccurringBackwardTree(
+          pick, round-1, 2*game, ultimateWinnerIdx);
+        Float secondSubtreeOdds = chanceOfPickOccurringBackwardTree(
+          pick, round-1, 2*game+1, ultimateWinnerIdx);
+
+        return firstSubtreeOdds * secondSubtreeOdds;
+      }
+      else
+      {
+        Float result = odds[round * TeamCount + localWinnerIdx];
+
+        // I have two children.  In one child, the ultimate winner is also the
+        // winner of the subtree.  In the other, I don't know.
+        Float firstSubtreeOdds = chanceOfPickOccurringBackwardTree(
+          pick, round-1, 2*game, localWinnerIdx);
+        Float secondSubtreeOdds = chanceOfPickOccurringBackwardTree(
+          pick, round-1, 2*game+1, localWinnerIdx);
+
+        return result * firstSubtreeOdds * secondSubtreeOdds;
+      }
+    }
+  }
   unsigned int gamesInRound(unsigned int round)
   {
     return TeamCount / (0x01 << (round + 1));

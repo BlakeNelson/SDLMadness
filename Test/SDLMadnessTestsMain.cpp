@@ -130,6 +130,71 @@ BOOST_AUTO_TEST_CASE(TestChanceOfPickOccurring)
   }
   std::cout << "Total: " << f << std::endl;
 
+  f = 0.0;
+  for(unsigned int i = 0; i < 8; ++i)
+  {
+    f += odds.chanceOfPickOccurringBackwardTree(i);
+    std::cout << odds.chanceOfPickOccurringBackward(i) << std::endl;
+  }
+  std::cout << "Total: " << f << std::endl;
+
+}
+
+BOOST_AUTO_TEST_CASE(TestChanceOfPickOccurring8Teams)
+{
+  BracketOdds<8> odds;
+  odds.odds[0] = .6;
+  odds.odds[1] = .4;
+  odds.odds[2] = .91;
+  odds.odds[3] = .9;
+  odds.odds[4] = .4;
+  odds.odds[5] = .6;
+  odds.odds[6] = .93;
+  odds.odds[7] = .07;
+
+  odds.odds[8] = .25;
+  odds.odds[9] = .14;
+  odds.odds[10] = .59;
+  odds.odds[11] = .02;
+  odds.odds[12] = .07;
+  odds.odds[13] = .13;
+  odds.odds[14] = .78;
+  odds.odds[15] = .02;
+
+  odds.odds[16] = .08;
+  odds.odds[17] = .04;
+  odds.odds[18] = .27;
+  odds.odds[19] = .01;
+  odds.odds[20] = .03;
+  odds.odds[21] = .05;
+  odds.odds[22] = .53;
+  odds.odds[23] = .01;
+
+
+  std::cout << "Original" << std::endl;
+  Float f = 0.0;
+  for(unsigned int i = 0; i < 128; ++i)
+  {
+    f += odds.chanceOfPickOccurring(i);
+    std::cout << odds.chanceOfPickOccurring(i) << std::endl;
+  }
+  std::cout << "Total: " << f << std::endl;
+
+  f = 0.0;
+  for(unsigned int i = 0; i < 128; ++i)
+  {
+    f += odds.chanceOfPickOccurringBackward(i);
+    std::cout << odds.chanceOfPickOccurringBackward(i) << std::endl;
+  }
+  std::cout << "Total: " << f << std::endl;
+
+  f = 0.0;
+  for(unsigned int i = 0; i < 128; ++i)
+  {
+    f += odds.chanceOfPickOccurringBackwardTree(i);
+    std::cout << odds.chanceOfPickOccurringBackwardTree(i) << std::endl;
+  }
+  std::cout << "Total: " << f << std::endl;
 }
 
 BOOST_AUTO_TEST_CASE(TestBracketGetOddsStats)
